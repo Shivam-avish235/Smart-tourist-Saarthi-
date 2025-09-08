@@ -1,175 +1,101 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
-const emergencyContactSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true
-  },
-  relationship: {
-    type: String,
-    required: true
-  },
-  phoneNumber: {
-    type: String,
-    required: true
-  },
-  isPrimary: {
-    type: Boolean,
-    default: false
-  }
-});
+// Helper function to generate a unique digitalId
+const generateDigitalId = () => {
+  const timestamp = Date.now().toString(36);
+  const randomStr = Math.random().toString(36).substring(2, 10);
+  return `DI-${timestamp}-${randomStr}`.toUpperCase();
+};
 
-const locationSchema = new mongoose.Schema({
-  coordinates: {
-    latitude: {
-      type: Number,
-      required: true
-    },
-    longitude: {
-      type: Number,
-      required: true
-    }
-  },
-  address: String,
-  timestamp: {
-    type: Date,
-    default: Date.now
-  },
-  accuracy: Number
-});
-
-// Main tourist schema with all fields integrated
 const touristSchema = new mongoose.Schema({
+  digitalId: {
+    type: String,
+    unique: true,
+    required: true,
+    default: generateDigitalId
+  },
   email: {
     type: String,
-    required: true,
+    required: [true, 'Email is required'],
     unique: true,
     lowercase: true,
-    index: true
+    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
   },
   password: {
     type: String,
-    required: true,
-    minlength: 6
+    required: [true, 'Password is required'],
+    minlength: 6,
+    select: false
   },
   personalInfo: {
     firstName: {
       type: String,
-      required: true,
+      required: [true, 'First name is required'],
       trim: true
     },
     lastName: {
       type: String,
-      required: true,
+      required: [true, 'Last name is required'],
       trim: true
     },
     dateOfBirth: {
       type: Date,
-      required: true
+      required: [true, 'Date of birth is required']
     },
     nationality: {
       type: String,
-      required: true
+      required: [true, 'Nationality is required']
     },
     phoneNumber: {
       type: String,
-      required: true
-    },
-    gender: {
-      type: String,
-      enum: ['male', 'female', 'other']
-    },
-    preferredLanguage: {
-      type: String,
-      default: 'english'
+      required: [true, 'Phone number is required']
     }
   },
   kycDetails: {
     documentType: {
       type: String,
-      enum: ['aadhaar', 'passport', 'voter_id', 'driver_license'],
-      required: true
+      required: [true, 'Document type is required'],
+      enum: ['aadhaar', 'passport', 'driving_license']
     },
     documentNumber: {
       type: String,
-      required: true
+      required: [true, 'Document number is required']
     },
-    documentImage: String,
     verified: {
       type: Boolean,
       default: false
-    },
-    verifiedBy: String,
-    verificationDate: Date
+    }
   },
   tripDetails: {
-    purpose: {
-      type: String,
-      enum: ['tourism', 'business', 'education', 'other'],
-      default: 'tourism'
-    },
     checkInDate: {
-      type: Date,
-      required: true
-    },
-    checkOutDate: {
-      type: Date,
-      required: true
-    },
-    plannedItinerary: [{
-      location: String,
-      coordinates: {
-        latitude: Number,
-        longitude: Number
-      },
-      plannedDate: Date,
-      duration: Number
-    }]
-  },
-  currentLocation: locationSchema,
-  // Location history array - properly integrated
-  locationHistory: [{
-    coordinates: {
-      latitude: Number,
-      longitude: Number
-    },
-    accuracy: Number,
-    timestamp: {
       type: Date,
       default: Date.now
     },
-    address: String
-  }],
-  safetyScore: {
-    type: Number,
-    min: 0,
-    max: 100,
-    default: 50
+    checkOutDate: {
+      type: Date,
+      default: () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    }
   },
-  riskLevel: {
-    type: String,
-    enum: ['low', 'medium', 'high'],
-    default: 'medium'
+  createdAt: {
+    type: Date,
+    default: Date.now
   },
-  status: {
-    type: String,
-    enum: ['active', 'inactive', 'emergency', 'missing'],
-    default: 'active'
-  },
-  emergencyContacts: [emergencyContactSchema],
-  lastActiveAt: {
+  updatedAt: {
     type: Date,
     default: Date.now
   }
-}, {
-  timestamps: true
 });
 
-// Add indexes
-touristSchema.index({ 'currentLocation.coordinates': '2dsphere' });
-touristSchema.index({ status: 1, lastActiveAt: -1 });
-touristSchema.index({ 'locationHistory.timestamp': -1 }); // Index for location history queries
+// Index for better query performance
+touristSchema.index({ email: 1 });
+touristSchema.index({ digitalId: 1 });
+
+// Middleware to update the updatedAt field before saving
+touristSchema.pre('save', function(next) {
+  this.updatedAt = Date.now();
+  next();
+});
 
 // Hash password before saving
 touristSchema.pre('save', async function(next) {
@@ -186,43 +112,17 @@ touristSchema.pre('save', async function(next) {
 
 // Compare password method
 touristSchema.methods.comparePassword = async function(candidatePassword) {
-  return bcrypt.compare(candidatePassword, this.password);
+  return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Method to add location to history
-touristSchema.methods.addLocationToHistory = function(locationData) {
-  // Keep only last 100 location points to prevent excessive growth
-  if (this.locationHistory.length >= 100) {
-    this.locationHistory.shift(); // Remove oldest location
-  }
-  
-  this.locationHistory.push({
-    coordinates: locationData.coordinates,
-    accuracy: locationData.accuracy,
-    address: locationData.address,
-    timestamp: new Date()
-  });
+// Transform output to remove password and __v
+touristSchema.methods.toJSON = function() {
+  const tourist = this.toObject();
+  delete tourist.password;
+  delete tourist.__v;
+  return tourist;
 };
 
-// Method to check if tourist is in emergency
-touristSchema.methods.isInEmergency = function() {
-  return this.status === 'emergency';
-};
-
-// Method to update safety score
-touristSchema.methods.updateSafetyScore = function(newScore) {
-  this.safetyScore = Math.max(0, Math.min(100, newScore));
-  
-  // Update risk level based on safety score
-  if (this.safetyScore >= 80) {
-    this.riskLevel = 'low';
-  } else if (this.safetyScore >= 50) {
-    this.riskLevel = 'medium';
-  } else {
-    this.riskLevel = 'high';
-  }
-};
-
-// Create and export the model
 const Tourist = mongoose.model('Tourist', touristSchema);
+
 export default Tourist;

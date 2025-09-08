@@ -73,6 +73,7 @@ router.post('/register', async (req, res) => {
         token,
         tourist: {
           id: tourist._id,
+          digitalId: tourist.digitalId,
           email: tourist.email,
           personalInfo: tourist.personalInfo
         }
@@ -80,6 +81,15 @@ router.post('/register', async (req, res) => {
     });
   } catch (error) {
     console.error('Register error:', error.message);
+    
+    // Handle duplicate key error specifically
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        error: 'Registration failed due to duplicate information'
+      });
+    }
+    
     res.status(500).json({
       success: false,
       error: 'Server error during registration'
@@ -142,6 +152,7 @@ router.post('/login', async (req, res) => {
         token,
         tourist: {
           id: tourist._id,
+          digitalId: tourist.digitalId,
           email: tourist.email,
           personalInfo: tourist.personalInfo
         }

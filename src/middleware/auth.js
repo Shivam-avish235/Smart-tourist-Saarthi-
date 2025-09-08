@@ -23,17 +23,40 @@ export const protect = async (req, res, next) => {
       
       // Get tourist from token
       req.tourist = await Tourist.findById(decoded.id);
+      
+      if (!req.tourist) {
+        return res.status(401).json({
+          success: false,
+          error: 'Not authorized to access this route'
+        });
+      }
+      
       next();
     } catch (error) {
+      console.error('Token verification error:', error.message);
       return res.status(401).json({
         success: false,
         error: 'Not authorized to access this route'
       });
     }
   } catch (error) {
+    console.error('Auth middleware error:', error.message);
     res.status(500).json({
       success: false,
       error: 'Server error during authentication'
     });
   }
+};
+
+// Optional: Admin authorization middleware
+export const authorize = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.tourist.role)) {
+      return res.status(403).json({
+        success: false,
+        error: `User role ${req.tourist.role} is not authorized to access this route`
+      });
+    }
+    next();
+  };
 };
