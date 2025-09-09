@@ -1,51 +1,51 @@
 import { Server } from 'socket.io';
+import Tourist from '../models/Tourist.js';
+import Incident from '../models/Incident.js';
 
 let io;
 
 export const initSocket = (server) => {
   io = new Server(server, {
-    cors: {
-      origin: "*",
-      methods: ["GET", "POST"]
-    }
+    cors: { origin: '*', methods: ['GET', 'POST'] },
   });
 
   io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
 
-    // Handle emergency alerts
-    socket.on('emergency-alert', (data) => {
-      console.log('🚨 Emergency alert received:', data);
-      
-      // Broadcast to all connected clients (admin dashboards)
-      socket.broadcast.emit('emergency-notification', {
-        ...data,
-        timestamp: new Date(),
-        alertId: Math.random().toString(36).substr(2, 9)
-      });
+    socket.on('admin-connect', () => {
+      socket.join('admin-room');
+      console.log('Admin connected:', socket.id);
+      sendDashboardUpdate();
     });
 
-    // Handle location updates
-    socket.on('location-update', (data) => {
-      console.log('📍 Location update received:', data);
-      
-      // Broadcast to admin dashboards
-      socket.broadcast.emit('tourist-location-update', {
-        ...data,
-        timestamp: new Date()
-      });
-    });
+    socket.on('emergency-alert', async (data) => {
+      try {
+        const incident = new Incident({
+          touristId: data.touristId,
+          type: 'Panic Button',
+          severity: 'Critical',
+          location: { type: 'Point', coordinates: [data.location.lng, data.location.lat] },
+          description: 'Emergency panic button activated',
+        });
+        await incident.save();
 
-    // Handle admin joining specific tourist room
-    socket.on('join-tourist-room', (touristId) => {
-      socket.join(`tourist-${touristId}`);
-      console.log(`Admin joined room for tourist: ${touristId}`);
-    });
+        await Tourist.findByIdAndUpdate(data.touristId, { status: 'emergency', riskLevel: 'High' });
 
-    // Handle admin leaving tourist room
-    socket.on('leave-tourist-room', (touristId) => {
-      socket.leave(`tourist-${touristId}`);
-      console.log(`Admin left room for tourist: ${touristId}`);
+        io.to('admin-room').emit('emergency-notification', {
+          incidentId: incident._id,
+          touristId: data.touristId,
+          touristName: data.touristName,
+          type: 'Panic Button',
+          severity: 'Critical',
+          location: data.location,
+          timestamp: new Date(),
+          alertId: Math.random().toString(36).substr(2, 9),
+        });
+
+        io.to('admin-room').emit('emergency-sound-alert', { type: 'critical', repeat: 3 });
+      } catch (error) {
+        console.error('Error handling emergency alert:', error);
+      }
     });
 
     socket.on('disconnect', () => {
@@ -56,9 +56,25 @@ export const initSocket = (server) => {
   return io;
 };
 
-export const getIO = () => {
-  if (!io) {
-    throw new Error('Socket.io not initialized!');
+async function sendDashboardUpdate() {
+  try {
+    const totalTourists = await Tourist.countDocuments();
+    const activeTourists = await Tourist.countDocuments({ lastActiveAt: { $gte: new Date(Date.now() - 30 * 60 * 1000) } });
+    const activeIncidents = await Incident.countDocuments({ status: { $in: ['New', 'Acknowledged', 'In Progress'] } });
+    const highRiskTourists = await Tourist.countDocuments({ riskLevel: 'High' });
+    io.to('admin-room').emit('dashboard-stats-update', {
+      activeTourists,
+      totalTourists,
+      emergencyAlerts: activeIncidents,
+      highRiskAreas: highRiskTourists,
+      timestamp: new Date(),
+    });
+  } catch (error) {
+    console.error('Error sending dashboard update:', error);
   }
+}
+
+export const getIO = () => {
+  if (!io) throw new Error('Socket.io not initialized!');
   return io;
 };

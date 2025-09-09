@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Tourist Safety Admin Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- External Libraries -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Login Page -->
+    <div id="loginPage" class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="logo">
+                    <i class="fas fa-shield-alt"></i>
+                    <h1>Smart Tourist Safety</h1>
+                </div>
+                <p class="login-subtitle">Admin Control Center</p>
+            </div>
+            
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="username" class="form-label">Admin Username</label>
+                    <input type="text" id="username" class="form-control" placeholder="Enter your username" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" id="password" class="form-control" placeholder="Enter your password" required>
+                </div>
+                
+                <div class="security-features">
+                    <div class="security-item">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Blockchain Authentication</span>
+                    </div>
+                    <div class="security-item">
+                        <i class="fas fa-id-card"></i>
+                        <span>KYC Verified</span>
+                    </div>
+                </div>
+                
+                <div class="language-selector-login">
+                    <label class="form-label">Language</label>
+                    <select id="loginLanguageSelect" class="form-control">
+                        <option value="en">🇬🇧 English</option>
+                        <option value="hi">🇮🇳 हिंदी</option>
+                        <option value="bn">🇮🇳 বাংলা</option>
+                        <option value="ta">🇮🇳 தமிழ்</option>
+                        <option value="te">🇮🇳 తెలుగు</option>
+                        <option value="gu">🇮🇳 ગુજરાતી</option>
+                        <option value="mr">🇮🇳 मराठी</option>
+                        <option value="kn">🇮🇳 ಕನ್ನಡ</option>
+                        <option value="ml">🇮🇳 മലയാളം</option>
+                        <option value="pa">🇮🇳 ਪੰਜਾਬੀ</option>
+                        <option value="or">🇮🇳 ଓଡ଼ିଆ</option>
+                        <option value="as">🇮🇳 অসমীয়া</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn btn--primary btn--full-width">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Secure Login
+                </button>
+                
+                <div class="login-footer">
+                    <p>Emergency Access: <a href="#" class="emergency-link">Contact Support</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboardPage" class="dashboard-container hidden">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>STS Admin</span>
+                </div>
+            </div>
+            
+            <ul class="sidebar-menu">
+                <li class="menu-item active" data-page="dashboard">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </li>
+                <li class="menu-item" data-page="map">
+                    <i class="fas fa-map-marked-alt"></i>
+                    <span>Map View</span>
+                </li>
+                <li class="menu-item" data-page="analytics">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Analytics</span>
+                </li>
+                <li class="menu-item" data-page="emergency">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Emergency Alerts</span>
+                    <span class="alert-badge">12</span>
+                </li>
+                <li class="menu-item" data-page="tourists">
+                    <i class="fas fa-users"></i>
+                    <span>Tourists</span>
+                </li>
+                <li class="menu-item" data-page="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <header class="dashboard-header">
+                <div class="header-left">
+                    <button class="sidebar-toggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h2 class="page-title">Dashboard Overview</h2>
+                </div>
+                
+                <div class="header-right">
+                    <div class="language-selector">
+                        <select id="languageSelect" class="form-control">
+                            <option value="en">🇬🇧 English</option>
+                            <option value="hi">🇮🇳 हिंदी</option>
+                            <option value="bn">🇮🇳 বাংলা</option>
+                            <option value="ta">🇮🇳 தமিழ்</option>
+                            <option value="te">🇮🇳 తెలుగు</option>
+                            <option value="gu">🇮🇳 ગુજરાતী</option>
+                            <option value="mr">🇮🇳 मराठी</option>
+                            <option value="kn">🇮🇳 ಕನ್ನಡ</option>
+                            <option value="ml">🇮🇳 മലയാളം</option>
+                            <option value="pa">🇮🇳 ਪੰਜਾਬੀ</option>
+                            <option value="or">🇮🇳 ଓଡ଼ିଆ</option>
+                            <option value="as">🇮🇳 অসমীয়া</option>
+                        </select>
+                    </div>
+                    
+                    <div class="user-menu">
+                        <div class="user-info">
+                            <span class="user-name">Admin User</span>
+                            <span class="user-role">System Administrator</span>
+                        </div>
+                        <button class="logout-btn" id="logoutBtn">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Home Page -->
+            <div id="dashboardHome" class="page-content">
+                <!-- Statistics Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon active-tourists">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="activeTourists">1,247</h3>
+                            <p>Active Tourists</p>
+                            <span class="stat-change positive">+12%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon total-tourists">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalTourists">2,891</h3>
+                            <p>Total Tourists</p>
+                            <span class="stat-change positive">+8%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon emergency-alerts">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="emergencyAlerts">12</h3>
+                            <p>Emergency Alerts</p>
+                            <span class="stat-change negative">+3</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon high-risk">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="highRiskAreas">8</h3>
+                            <p>High Risk Areas</p>
+                            <span class="stat-change neutral">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Content Grid -->
+                <div class="dashboard-grid">
+                    <!-- Map Section -->
+                    <div class="map-section">
+                        <div class="section-header">
+                            <h3>Live Tourist Map</h3>
+                            <div class="map-controls">
+                                <button class="btn btn--sm" id="refreshMap">
+                                    <i class="fas fa-sync"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                        <div id="map" class="map-container"></div>
+                        <div class="map-legend">
+                            <div class="legend-item">
+                                <span class="legend-color safe"></span>
+                                <span>Safe Zone</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color caution"></span>
+                                <span>Caution Area</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color danger"></span>
+                                <span>Danger Zone</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Activity Feed -->
+                    <div class="activity-feed">
+                        <div class="section-header">
+                            <h3>Recent Activity</h3>
+                        </div>
+                        <div class="activity-list" id="activityList">
+                            <div class="activity-item">
+                                <div class="activity-icon emergency">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                </div>
+                                <div class="activity-content">
+                                    <p><strong>Emergency Alert</strong></p>
+                                    <p>Priya Patel activated panic button</p>
+                                    <span class="activity-time">2 minutes ago</span>
+                                </div>
+                            </div>
+                            
+                            <div class="activity-item">
+                                <div class="activity-icon location">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                </div>
+                                <div class="activity-content">
+                                    <p><strong>Location Update</strong></p>
+                                    <p>Rahul Singh entered safe zone</p>
+                                    <span class="activity-time">5 minutes ago</span>
+                                </div>
+                            </div>
+                            
+                            <div class="activity-item">
+                                <div class="activity-icon warning">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                                <div class="activity-content">
+                                    <p><strong>Route Deviation</strong></p>
+                                    <p>Amit Kumar left planned route</p>
+                                    <span class="activity-time">15 minutes ago</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Page -->
+            <div id="analyticsPage" class="page-content hidden">
+                <div class="analytics-header">
+                    <h2>Analytics & Insights</h2>
+                    <div class="time-filters">
+                        <button class="btn btn--sm" data-period="daily">Daily</button>
+                        <button class="btn btn--sm active" data-period="weekly">Weekly</button>
+                        <button class="btn btn--sm" data-period="monthly">Monthly</button>
+                    </div>
+                </div>
+
+                <div class="analytics-grid">
+                    <div class="chart-container" style="position: relative; height: 400px;">
+                        <h3>Emergency Incidents Trend</h3>
+                        <canvas id="emergencyChart"></canvas>
+                    </div>
+                    
+                    <div class="chart-container" style="position: relative; height: 400px;">
+                        <h3>Risk Level Distribution</h3>
+                        <canvas id="riskChart"></canvas>
+                    </div>
+                    
+                    <div class="chart-container" style="position: relative; height: 400px;">
+                        <h3>Tourist Activity</h3>
+                        <canvas id="activityChart"></canvas>
+                    </div>
+                    
+                    <div class="analytics-summary">
+                        <h3>Safety Metrics</h3>
+                        <div class="metrics-grid">
+                            <div class="metric-item">
+                                <span class="metric-value">87%</span>
+                                <span class="metric-label">Average Safety Score</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-value">4.2min</span>
+                                <span class="metric-label">Avg Response Time</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-value">98.5%</span>
+                                <span class="metric-label">Communication Success</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Emergency Alerts Page -->
+            <div id="emergencyPage" class="page-content hidden">
+                <div class="emergency-header">
+                    <h2>Emergency Alerts Management</h2>
+                    <div class="alert-filters">
+                        <button class="btn btn--sm btn--primary" data-status="all">All Alerts</button>
+                        <button class="btn btn--sm" data-status="active">Active</button>
+                        <button class="btn btn--sm" data-status="resolved">Resolved</button>
+                    </div>
+                </div>
+
+                <div class="emergency-grid">
+                    <div class="alerts-list">
+                        <div id="emergencyList"></div>
+                    </div>
+                    
+                    <div class="communication-panel">
+                        <div class="comm-header">
+                            <h3>Communication Center</h3>
+                            <div class="comm-status">
+                                <span class="status-dot online"></span>
+                                <span>Online</span>
+                            </div>
+                        </div>
+                        
+                        <div class="chat-window" id="chatWindow">
+                            <div class="chat-messages" id="chatMessages">
+                                <div class="system-message">Communication system ready</div>
+                            </div>
+                            <div class="chat-input">
+                                <input type="text" id="messageInput" placeholder="Type your message..." class="form-control">
+                                <button class="btn btn--primary" id="sendMessage">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tourists Page -->
+            <div id="touristsPage" class="page-content hidden">
+                <div class="tourists-header">
+                    <h2>Tourist Management</h2>
+                    <div class="search-bar">
+                        <input type="text" id="touristSearch" placeholder="Search tourists..." class="form-control">
+                        <button class="btn btn--primary">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="tourists-table">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Status</th>
+                                <th>Safety Score</th>
+                                <th>Last Seen</th>
+                                <th>Risk Level</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="touristsTableBody">
+                            <!-- Dynamic content -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
