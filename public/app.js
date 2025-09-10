@@ -4,12 +4,29 @@ class TouristSafetyDashboard {
   constructor() {
     this.currentUser = null;
     this.currentPage = 'dashboard';
-    this.currentLanguage = 'en';
+    this.currentLanguage = localStorage.getItem('preferredLanguage') || 'en';
+    this.translations = {};
     this.map = null;
     this.charts = {};
     this.websocket = null;
     this.selectedTourist = null;
     this.isInitialized = false;
+    
+    // Available languages with their metadata
+    this.availableLanguages = [
+      { code: 'en', name: 'English', flag: '🇬🇧' },
+      { code: 'hi', name: 'हिंदी', flag: '🇮🇳' },
+      { code: 'bn', name: 'বাংলা', flag: '🇧🇩' },
+      { code: 'te', name: 'తెలుగు', flag: '🇮🇳' },
+      { code: 'ta', name: 'தமிழ்', flag: '🇮🇳' },
+      { code: 'mr', name: 'मराठी', flag: '🇮🇳' },
+      { code: 'gu', name: 'ગુજરાતી', flag: '🇮🇳' },
+      { code: 'kn', name: 'ಕನ್ನಡ', flag: '🇮🇳' },
+      { code: 'ml', name: 'മലയാളം', flag: '🇮🇳' },
+      { code: 'pa', name: 'ਪੰਜਾਬੀ', flag: '🇮🇳' },
+      { code: 'or', name: 'ଓଡ଼ିଆ', flag: '🇮🇳' },
+      { code: 'as', name: 'অসমীয়া', flag: '🇮🇳' }
+    ];
     // Sample data (in production, load from APIs)
     this.data = {
       dashboard_stats: {

@@ -1,0 +1,141 @@
+{
+  "tourists": [
+    {
+      "email": "test1@example.com",
+      "password": "password123",
+      "personalInfo": {
+        "firstName": "Arjun",
+        "lastName": "Sharma",
+        "dateOfBirth": "1990-05-15",
+        "nationality": "India",
+        "phoneNumber": "+91-9876543210"
+      },
+      "kycDetails": {
+        "documentType": "passport",
+        "documentNumber": "P1234567",
+        "verified": true
+      },
+      "tripDetails": {
+        "checkInDate": "2025-09-01",
+        "checkOutDate": "2025-09-15"
+      },
+      "currentLocation": {
+        "coordinates": {
+          "latitude": 26.1445,
+          "longitude": 91.7362
+        },
+        "address": "Guwahati, Assam",
+        "accuracy": 10
+      },
+      "safetyScore": 85,
+      "riskLevel": "Low",
+      "status": "active"
+    },
+    {
+      "email": "test2@example.com",
+      "password": "password123",
+      "personalInfo": {
+        "firstName": "Priya",
+        "lastName": "Patel",
+        "dateOfBirth": "1992-03-20",
+        "nationality": "India",
+        "phoneNumber": "+91-9876543211"
+      },
+      "kycDetails": {
+        "documentType": "aadhaar",
+        "documentNumber": "A9876543210",
+        "verified": false
+      },
+      "tripDetails": {
+        "checkInDate": "2025-09-02",
+        "checkOutDate": "2025-09-10"
+      },
+      "currentLocation": {
+        "coordinates": {
+          "latitude": 26.15,
+          "longitude": 91.74
+        },
+        "address": "Dispur, Assam",
+        "accuracy": 15
+      },
+      "safetyScore": 25,
+      "riskLevel": "High",
+      "status": "emergency"
+    },
+    {
+      "email": "test3@example.com",
+      "password": "password123",
+      "personalInfo": {
+        "firstName": "Rahul",
+        "lastName": "Singh",
+        "dateOfBirth": "1988-11-10",
+        "nationality": "India",
+        "phoneNumber": "+91-9876543212"
+      },
+      "kycDetails": {
+        "documentType": "driving_license",
+        "documentNumber": "DL123456789",
+        "verified": true
+      },
+      "tripDetails": {
+        "checkInDate": "2025-08-28",
+        "checkOutDate": "2025-09-12"
+      },
+      "currentLocation": {
+        "coordinates": {
+          "latitude": 26.14,
+          "longitude": 91.732
+        },
+        "address": "Jalukbari, Guwahati",
+        "accuracy": 8
+      },
+      "safetyScore": 70,
+      "riskLevel": "Medium",
+      "status": "active"
+    }
+  ],
+  "incidents": [
+    {
+      "type": "Panic Button",
+      "severity": "Critical",
+      "description": "Emergency panic button activated by tourist",
+      "location": {
+        "type": "Point",
+        "coordinates": [
+          91.74,
+          26.15
+        ]
+      },
+      "touristEmail": "test2@example.com",
+      "status": "New"
+    },
+    {
+      "type": "Location Drop-off",
+      "severity": "High",
+      "description": "Tourist location not updated for 30 minutes",
+      "location": {
+        "type": "Point",
+        "coordinates": [
+          91.732,
+          26.14
+        ]
+      },
+      "touristEmail": "test3@example.com",
+      "status": "In Progress"
+    },
+    {
+      "type": "Route Deviation",
+      "severity": "Medium",
+      "description": "Tourist deviated from planned route",
+      "location": {
+        "type": "Point",
+        "coordinates": [
+          91.7362,
+          26.1445
+        ]
+      },
+      "touristEmail": "test1@example.com",
+      "status": "Resolved"
+    }
+  ]
+}

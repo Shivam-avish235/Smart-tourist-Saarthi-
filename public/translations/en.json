@@ -1,0 +1,44 @@
+{
+  "common": {
+    "welcome": "Welcome to Smart Tourist Safety",
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "dashboard": "Dashboard",
+    "profile": "Profile",
+    "settings": "Settings",
+    "emergencies": "Emergencies",
+    "statistics": "Statistics"
+  },
+  "auth": {
+    "email": "Email Address",
+    "password": "Password",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "phoneNumber": "Phone Number",
+    "loginButton": "Sign In",
+    "registerButton": "Sign Up",
+    "forgotPassword": "Forgot Password?"
+  },
+  "dashboard": {
+    "activeTourists": "Active Tourists",
+    "emergencyAlerts": "Emergency Alerts",
+    "highRiskAreas": "High Risk Areas",
+    "safetyStatus": "Safety Status",
+    "lastUpdated": "Last Updated",
+    "viewDetails": "View Details"
+  },
+  "emergency": {
+    "panicButton": "Emergency Button",
+    "reportIncident": "Report Incident",
+    "getHelp": "Get Help",
+    "contactAuthorities": "Contact Authorities",
+    "currentLocation": "Current Location"
+  },
+  "notifications": {
+    "success": "Success",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Information"
+  }
+}

@@ -25,8 +25,14 @@ const __dirname = path.dirname(__filename);
 
 
 
-// Serve frontend static files from the "public" directory at root URL
-app.use(express.static(path.join(__dirname, '..', 'public')));
+// Serve frontend static files from the "public" directory
+app.use(express.static(path.join(__dirname, '..', 'public'), {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.json')) {
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    }
+  }
+}));
 
 // Serve index.html on root route for SPA fallback
 app.get('/', (req, res) => {
@@ -54,17 +60,24 @@ app.use(cors({
   credentials: true
 }));
 
-// Security headers with Helmet - use hashes or nonces instead of 'unsafe-inline'
+// Enhanced security headers with Helmet
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", 'https:'],
-      scriptSrc: ["'self'", 'https:'],
-      // Add other directives as needed (e.g., imgSrc, connectSrc)
+      styleSrc: ["'self'", 'https:', "'unsafe-inline'"], // Required for some UI frameworks
+      scriptSrc: ["'self'", 'https:', "'unsafe-inline'", "'unsafe-eval'"], // Required for some JS frameworks
+      imgSrc: ["'self'", 'data:', 'https:'],
+      connectSrc: ["'self'", 'wss:', 'https:'],
+      fontSrc: ["'self'", 'https:', 'data:'],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'self'"],
     },
   },
-  crossOriginEmbedderPolicy: false
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  referrerPolicy: { policy: "strict-origin-when-cross-origin" }
 }));
 
 // Logging
@@ -77,10 +90,11 @@ if (!process.env.MONGO_URI) {
 }
 
 const mongooseOptions = {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
   serverSelectionTimeoutMS: 5000,
   socketTimeoutMS: 45000,
+  maxPoolSize: 10,
+  autoIndex: process.env.NODE_ENV !== 'production', // Don't build indexes in production
+  retryWrites: true,
 };
 
 mongoose.connect(process.env.MONGO_URI, mongooseOptions)
@@ -122,9 +136,48 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Error handling middleware
+// Enhanced error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Error:', err.message);
+  console.error('Error Details:', {
+    message: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+    path: req.path,
+    method: req.method,
+    timestamp: new Date().toISOString()
+  });
+
+  // Handle different types of errors
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid JSON payload',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  }
+
+  // Handle mongoose validation errors
+  if (err.name === 'ValidationError') {
+    return res.status(400).json({
+      success: false,
+      error: 'Validation Error',
+      details: Object.values(err.errors).map(e => e.message)
+    });
+  }
+
+  // Handle JWT errors
+  if (err.name === 'JsonWebTokenError') {
+    return res.status(401).json({
+      success: false,
+      error: 'Invalid token'
+    });
+  }
+
+  if (err.name === 'TokenExpiredError') {
+    return res.status(401).json({
+      success: false,
+      error: 'Token expired'
+    });
+  }
 
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
     return res.status(400).json({
@@ -191,18 +244,26 @@ const server = app.listen(PORT, '0.0.0.0', () => {
 initSocket(server);
 
 // Graceful shutdown for unhandled rejections and exceptions
-process.on('unhandledRejection', (err, promise) => {
+process.on('unhandledRejection', async (err, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', err);
-  mongoose.connection.close(() => {
+  try {
+    await mongoose.connection.close();
     server.close(() => process.exit(1));
-  });
+  } catch (error) {
+    console.error('Error during shutdown:', error);
+    process.exit(1);
+  }
 });
 
-process.on('uncaughtException', (err) => {
+process.on('uncaughtException', async (err) => {
   console.error('Uncaught Exception:', err);
-  mongoose.connection.close(() => {
+  try {
+    await mongoose.connection.close();
     server.close(() => process.exit(1));
-  });
+  } catch (error) {
+    console.error('Error during shutdown:', error);
+    process.exit(1);
+  }
 });
 
 export default app;

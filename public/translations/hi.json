@@ -1,0 +1,44 @@
+{
+  "common": {
+    "welcome": "स्मार्ट पर्यटक सुरक्षा में आपका स्वागत है",
+    "login": "लॉग इन",
+    "register": "पंजीकरण",
+    "logout": "लॉग आउट",
+    "dashboard": "डैशबोर्ड",
+    "profile": "प्रोफ़ाइल",
+    "settings": "सेटिंग्स",
+    "emergencies": "आपातकाल",
+    "statistics": "आंकड़े"
+  },
+  "auth": {
+    "email": "ईमेल पता",
+    "password": "पासवर्ड",
+    "firstName": "पहला नाम",
+    "lastName": "अंतिम नाम",
+    "phoneNumber": "फ़ोन नंबर",
+    "loginButton": "साइन इन करें",
+    "registerButton": "साइन अप करें",
+    "forgotPassword": "पासवर्ड भूल गए?"
+  },
+  "dashboard": {
+    "activeTourists": "सक्रिय पर्यटक",
+    "emergencyAlerts": "आपातकालीन अलर्ट",
+    "highRiskAreas": "उच्च जोखिम वाले क्षेत्र",
+    "safetyStatus": "सुरक्षा स्थिति",
+    "lastUpdated": "अंतिम अपडेट",
+    "viewDetails": "विवरण देखें"
+  },
+  "emergency": {
+    "panicButton": "आपातकालीन बटन",
+    "reportIncident": "घटना की रिपोर्ट करें",
+    "getHelp": "मदद प्राप्त करें",
+    "contactAuthorities": "अधिकारियों से संपर्क करें",
+    "currentLocation": "वर्तमान स्थान"
+  },
+  "notifications": {
+    "success": "सफलता",
+    "error": "त्रुटि",
+    "warning": "चेतावनी",
+    "info": "जानकारी"
+  }
+}
