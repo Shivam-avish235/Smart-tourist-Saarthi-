@@ -1,13 +1,21 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import { validateTouristRegistration } from '../middleware/validation.js';
 import Tourist from '../models/Tourist.js';
 
 const router = express.Router();
 
+// @desc    Test auth route
+// @route   GET /api/auth/test
+// @access  Public
+router.get('/test', (req, res) => {
+    res.json({ message: 'Auth route is working' });
+});
+
 // @desc    Register a tourist
 // @route   POST /api/auth/register
 // @access  Public
-router.post('/register', async (req, res) => {
+router.post('/register', validateTouristRegistration, async (req, res) => {
   try {
     // Add validation for request body
     if (!req.body || Object.keys(req.body).length === 0) {
@@ -36,24 +44,25 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    // Create tourist (password will be hashed by pre-save hook)
+    // Create tourist with proper structure
     const tourist = new Tourist({
       email,
       password,
       personalInfo: {
         firstName,
         lastName,
-        dateOfBirth,
+        dateOfBirth: new Date(dateOfBirth),
         nationality,
         phoneNumber
       },
       kycDetails: {
         documentType,
-        documentNumber
+        documentNumber,
+        verificationStatus: 'PENDING'
       },
       tripDetails: {
-        checkInDate: checkInDate || new Date(),
-        checkOutDate: checkOutDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Default 7 days
+        checkInDate: checkInDate ? new Date(checkInDate) : new Date(),
+        checkOutDate: checkOutDate ? new Date(checkOutDate) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Default 7 days
       }
     });
 
@@ -80,7 +89,32 @@ router.post('/register', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Register error:', error.message);
+    console.error('Register error:', error);
+    
+    // Handle different types of errors
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        error: 'Validation Error',
+        details: Object.values(error.errors).map(err => err.message)
+      });
+    }
+    
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(400).json({
+        success: false,
+        error: `Duplicate ${field}`,
+        message: `A tourist with this ${field} already exists`
+      });
+    }
+    
+    // Generic server error
+    res.status(500).json({
+      success: false,
+      error: 'Server error during registration',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'An unexpected error occurred'
+    });
     
     // Handle duplicate key error specifically
     if (error.code === 11000) {
@@ -168,4 +202,4 @@ router.post('/login', async (req, res) => {
 });
 
 // Export the router
-export { router as authRoutes };
+export default router;

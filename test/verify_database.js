@@ -1,11 +1,11 @@
-import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import mongoose from 'mongoose';
 
 dotenv.config();
 
 // Import models
-import Tourist from './src/models/Tourist.js';
-import Incident from './src/models/Incident.js';
+import Incident from '../src/models/Incident.js';
+import Tourist from '../src/models/Tourist.js';
 
 const verifyDatabase = async () => {
     try {
