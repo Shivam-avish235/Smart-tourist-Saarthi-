@@ -1,606 +1,347 @@
-// Smart Tourist Safety Dashboard - JavaScript Application
-
-class TouristSafetyDashboard {
-  constructor() {
-    this.currentUser = null;
-    this.currentPage = 'dashboard';
-    this.currentLanguage = localStorage.getItem('preferredLanguage') || 'en';
-    this.translations = {};
-    this.map = null;
-    this.charts = {};
-    this.websocket = null;
-    this.selectedTourist = null;
-    this.isInitialized = false;
-    
-    // Available languages with their metadata
-    this.availableLanguages = [
-      { code: 'en', name: 'English', flag: '🇬🇧' },
-      { code: 'hi', name: 'हिंदी', flag: '🇮🇳' },
-      { code: 'bn', name: 'বাংলা', flag: '🇧🇩' },
-      { code: 'te', name: 'తెలుగు', flag: '🇮🇳' },
-      { code: 'ta', name: 'தமிழ்', flag: '🇮🇳' },
-      { code: 'mr', name: 'मराठी', flag: '🇮🇳' },
-      { code: 'gu', name: 'ગુજરાતી', flag: '🇮🇳' },
-      { code: 'kn', name: 'ಕನ್ನಡ', flag: '🇮🇳' },
-      { code: 'ml', name: 'മലയാളം', flag: '🇮🇳' },
-      { code: 'pa', name: 'ਪੰਜਾਬੀ', flag: '🇮🇳' },
-      { code: 'or', name: 'ଓଡ଼ିଆ', flag: '🇮🇳' },
-      { code: 'as', name: 'অসমীয়া', flag: '🇮🇳' }
-    ];
-    // Sample data (in production, load from APIs)
-    this.data = {
-      dashboard_stats: {
-        activeTourists: 1247,
-        totalTourists: 2891,
-        emergencyAlerts: 12,
-        highRiskAreas: 8,
-      },
-      tourists: [
-        {
-          id: '1',
-          name: 'Arjun Sharma',
-          status: 'active',
-          location: { lat: 26.1445, lng: 91.7362 },
-          safetyScore: 85,
-          lastSeen: '2 minutes ago',
-          phone: '+91-9876543210',
-          riskLevel: 'low',
-        },
-        {
-          id: '2',
-          name: 'Priya Patel',
-          status: 'emergency',
-          location: { lat: 26.1500, lng: 91.7400 },
-          safetyScore: 25,
-          lastSeen: '1 minute ago',
-          phone: '+91-9876543211',
-          riskLevel: 'high',
-        },
-        {
-          id: '3',
-          name: 'Rahul Singh',
-          status: 'active',
-          location: { lat: 26.1400, lng: 91.7320 },
-          safetyScore: 70,
-          lastSeen: '5 minutes ago',
-          phone: '+91-9876543212',
-          riskLevel: 'medium',
-        },
-      ],
-      geofences: [
-        {
-          id: '1',
-          name: 'Safe Zone - City Center',
-          type: 'circle',
-          center: { lat: 26.1445, lng: 91.7362 },
-          radius: 2000,
-          color: 'green',
-          dangerLevel: 'safe',
-        },
-        {
-          id: '2',
-          name: 'Caution Area - Market District',
-          type: 'circle',
-          center: { lat: 26.1500, lng: 91.7400 },
-          radius: 1500,
-          color: 'yellow',
-          dangerLevel: 'caution',
-        },
-        {
-          id: '3',
-          name: 'High Risk - Industrial Zone',
-          type: 'circle',
-          center: { lat: 26.1350, lng: 91.7300 },
-          radius: 1000,
-          color: 'red',
-          dangerLevel: 'danger',
-        },
-      ],
-      emergencyAlerts: [
-        {
-          id: '1',
-          touristId: '2',
-          touristName: 'Priya Patel',
-          type: 'Panic Button',
-          severity: 'Critical',
-          timestamp: '2025-09-08T21:30:00Z',
-          location: { lat: 26.1500, lng: 91.7400 },
-          status: 'Active',
-          message: 'Emergency panic button activated',
-        },
-        {
-          id: '2',
-          touristId: '5',
-          touristName: 'Amit Kumar',
-          type: 'Location Loss',
-          severity: 'High',
-          timestamp: '2025-09-08T20:45:00Z',
-          location: { lat: 26.1200, lng: 91.7100 },
-          status: 'Investigating',
-          message: 'No location update for 30 minutes',
-        },
-      ],
-      languages: [
-        { code: 'en', name: 'English', flag: '🇬🇧' },
-        { code: 'hi', name: 'हिंदी', flag: '🇮🇳' },
-        { code: 'bn', name: 'বাংলা', flag: '🇮🇳' },
-        { code: 'ta', name: 'தமிழ்', flag: '🇮🇳' },
-        { code: 'te', name: 'తెలుగు', flag: '🇮🇳' },
-        { code: 'gu', name: 'ગુજરાતી', flag: '🇮🇳' },
-        { code: 'mr', name: 'मराठी', flag: '🇮🇳' },
-        { code: 'kn', name: 'ಕನ್ನಡ', flag: '🇮🇳' },
-        { code: 'ml', name: 'മലയാളം', flag: '🇮🇳' },
-        { code: 'pa', name: 'ਪੰਜਾਬੀ', flag: '🇮🇳' },
-        { code: 'or', name: 'ଓଡ଼ିଆ', flag: '🇮🇳' },
-        { code: 'as', name: 'অসমীয়া', flag: '🇮🇳' },
-      ],
-    };
-    this.init();
-  }
-
-  init() {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => this.initializeApp());
-    } else {
-      setTimeout(() => this.initializeApp(), 100);
-    }
-  }
-
-  initializeApp() {
-    if (this.isInitialized) return;
-    console.log('Initializing Smart Tourist Safety Dashboard...');
-    this.setupLanguageSelector();
-    this.setupEventListeners();
-    this.checkAuthStatus();
-    this.isInitialized = true;
-    console.log('Dashboard initialization complete');
-  }
-
-  setupEventListeners() {
-    console.log('Setting up event listeners...');
-    setTimeout(() => {
-      this.setupLoginEvents();
-      this.setupDashboardEvents();
-    }, 50);
-  }
-
-  setupLoginEvents() {
+document.addEventListener('DOMContentLoaded', () => {
+    // --- DOM ELEMENT REFERENCES ---
+    const loginPage = document.getElementById('loginPage');
+    const dashboardPage = document.getElementById('dashboardPage');
     const loginForm = document.getElementById('loginForm');
-    const loginButton = document.querySelector('#loginForm button[type="submit"]');
-    const usernameField = document.getElementById('username');
-    const passwordField = document.getElementById('password');
-    console.log('Setting up login events...', {
-      loginForm: !!loginForm,
-      loginButton: !!loginButton,
-      usernameField: !!usernameField,
-      passwordField: !!passwordField,
-    });
-    if (loginForm && loginButton) {
-      const newForm = loginForm.cloneNode(true);
-      loginForm.parentNode.replaceChild(newForm, loginForm);
-      const newLoginButton = newForm.querySelector('button[type="submit"]');
-      newForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        this.handleLogin();
-        return false;
-      });
-      newLoginButton.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        this.handleLogin();
-        return false;
-      });
-      if (newForm.querySelector('#username')) {
-        newForm.querySelector('#username').addEventListener('keypress', (e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            this.handleLogin();
-          }
-        });
-      }
-      if (newForm.querySelector('#password')) {
-        newForm.querySelector('#password').addEventListener('keypress', (e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            this.handleLogin();
-          }
-        });
-      }
-    }
-    const emergencyLink = document.querySelector('.emergency-link');
-    if (emergencyLink) {
-      emergencyLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        alert(
-          'Emergency Support Contact:\n\nPhone: +91-1800-XXX-XXXX\nEmail: emergency@touristsafety.gov.in\n24/7 Emergency Helpline Available'
-        );
-      });
-    }
-    const loginLanguageSelect = document.getElementById('loginLanguageSelect');
-    if (loginLanguageSelect) {
-      loginLanguageSelect.addEventListener('change', (e) => {
-        this.changeLanguage(e.target.value);
-      });
-    }
-  }
-
-  setupDashboardEvents() {
-    console.log('Dashboard events will be set up after login');
-  }
-
-  setupDashboardEventListeners() {
-    console.log('Setting up dashboard event listeners...');
     const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-      logoutBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        this.handleLogout();
-      });
-    }
-    document.querySelectorAll('.menu-item').forEach((item) => {
-      item.addEventListener('click', (e) => {
-        e.preventDefault();
-        const page = e.currentTarget.dataset.page;
-        if (page) {
-          this.navigateToPage(page);
-        }
-      });
-    });
-    const languageSelect = document.getElementById('languageSelect');
-    if (languageSelect) {
-      languageSelect.addEventListener('change', (e) => {
-        this.changeLanguage(e.target.value);
-      });
-    }
-    const refreshMapBtn = document.getElementById('refreshMap');
-    if (refreshMapBtn) {
-      refreshMapBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        this.refreshMapData();
-      });
-    }
-    document.querySelectorAll('[data-period]').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.querySelectorAll('[data-period]').forEach((b) => b.classList.remove('active'));
-        e.target.classList.add('active');
-        this.updateAnalytics(e.target.dataset.period);
-      });
-    });
-    document.querySelectorAll('[data-status]').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.querySelectorAll('[data-status]').forEach((b) => b.classList.remove('btn--primary'));
-        e.target.classList.add('btn--primary');
-        this.filterEmergencyAlerts(e.target.dataset.status);
-      });
-    });
-    const sendMessageBtn = document.getElementById('sendMessage');
-    const messageInput = document.getElementById('messageInput');
-    if (sendMessageBtn && messageInput) {
-      sendMessageBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        this.sendMessage();
-      });
-      messageInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          this.sendMessage();
-        }
-      });
-    }
-    const touristSearch = document.getElementById('touristSearch');
-    if (touristSearch) {
-      touristSearch.addEventListener('input', (e) => {
-        this.searchTourists(e.target.value);
-      });
-    }
-    const sidebarToggle = document.querySelector('.sidebar-toggle');
-    if (sidebarToggle) {
-      sidebarToggle.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.querySelector('.sidebar').classList.toggle('open');
-      });
-    }
-  }
+    const pageTitleEl = document.querySelector('.page-title');
+    const activeTouristsEl = document.getElementById('activeTourists');
+    const totalTouristsEl = document.getElementById('totalTourists');
+    const emergencyAlertsEl = document.getElementById('emergencyAlerts');
+    const highRiskAreasEl = document.getElementById('highRiskAreas');
+    const pages = {
+        dashboard: document.getElementById('dashboardHome'),
+        analytics: document.getElementById('analyticsPage'),
+        emergency: document.getElementById('emergencyPage'),
+        geofence: document.getElementById('geofencePage'),
+        tourists: document.getElementById('touristsPage'),
+        settings: document.getElementById('settingsPage'),
+    };
+    const activityList = document.getElementById('activityList');
+    const emergencyList = document.getElementById('emergencyList');
+    const touristsTableBody = document.getElementById('touristsTableBody');
+    const sidebarMenuItems = document.querySelectorAll('.sidebar-menu .menu-item');
+    
+    // Geofence elements
+    const geofenceForm = document.getElementById('geofenceForm');
+    const geofenceTableBody = document.getElementById('geofenceTableBody');
+    const editGeofenceModal = document.getElementById('editGeofenceModal');
+    const editGeofenceForm = document.getElementById('editGeofenceForm');
+    const closeEditModal = document.getElementById('closeEditModal');
 
-  setupLanguageSelector() {
-    ['languageSelect', 'loginLanguageSelect'].forEach((selectorId) => {
-      const selector = document.getElementById(selectorId);
-      if (selector) {
-        selector.innerHTML = '';
-        this.data.languages.forEach((lang) => {
-          const option = document.createElement('option');
-          option.value = lang.code;
-          option.textContent = `${lang.flag} ${lang.name}`;
-          selector.appendChild(option);
+
+    // --- STATE & CONFIG ---
+    const API_URL = 'http://localhost:5000/api';
+    let token = null;
+    let map;
+    let touristMarkers = [];
+    let geofenceLayers = [];
+    let allGeofences = [];
+    let charts = {};
+
+    // --- CORE FUNCTIONS ---
+    const handleLogout = () => {
+        token = null;
+        localStorage.removeItem('adminToken');
+        showLogin();
+    };
+
+    const fetchWithAuth = (url, options = {}) => {
+        const headers = { ...options.headers, 'Authorization': `Bearer ${token}` };
+        if (!(options.body instanceof FormData)) {
+            headers['Content-Type'] = 'application/json';
+        }
+        return fetch(url, { ...options, headers });
+    };
+
+    const showPage = (pageKey) => {
+        Object.values(pages).forEach(page => page.classList.add('hidden'));
+        if (pages[pageKey]) pages[pageKey].classList.remove('hidden');
+
+        sidebarMenuItems.forEach(item => {
+            item.classList.toggle('active', item.dataset.page === pageKey);
         });
-        selector.value = this.currentLanguage;
-      }
+
+        const activeMenuItem = document.querySelector(`.menu-item[data-page="${pageKey}"] span`);
+        pageTitleEl.textContent = activeMenuItem ? `${activeMenuItem.textContent}` : 'Dashboard';
+        
+        if(pageKey === 'analytics') initAnalyticsCharts();
+        if(pageKey === 'emergency') fetchEmergencyAlerts();
+    };
+
+    const initMap = () => {
+        if (map) return;
+        map = L.map('map').setView([28.6139, 77.2090], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+    };
+    
+    const fetchDashboardData = async () => {
+        try {
+            const res = await fetchWithAuth(`${API_URL}/admin/dashboard/stats`);
+            if (!res.ok) throw new Error('Failed to fetch stats');
+            const { data } = await res.json();
+            activeTouristsEl.textContent = data.activeTourists;
+            totalTouristsEl.textContent = data.totalTourists;
+            emergencyAlertsEl.textContent = data.emergencyAlerts;
+            highRiskAreasEl.textContent = data.highRiskAreas;
+            updateActivityList(data.recentAlerts);
+        } catch (error) {
+            console.error(error);
+            handleLogout();
+        }
+    };
+
+    const fetchAllDataForDashboard = () => {
+        fetchDashboardData();
+        fetchTourists();
+        fetchGeofences();
+    };
+    
+    const updateActivityList = (alerts) => {
+        activityList.innerHTML = '';
+        if (!alerts || alerts.length === 0) {
+            activityList.innerHTML = '<div>No recent activity.</div>';
+            return;
+        }
+        alerts.forEach(alert => {
+            const touristName = alert.touristId ? `${alert.touristId.personalInfo.firstName} ${alert.touristId.personalInfo.lastName}` : 'Unknown';
+            const item = document.createElement('div');
+            item.className = 'activity-item';
+            item.innerHTML = `<div class="activity-icon emergency"><i class="fas fa-exclamation-circle"></i></div>
+                <div class="activity-content"><p><strong>${alert.type}</strong></p><p>${touristName}</p>
+                <span class="activity-time">${new Date(alert.createdAt).toLocaleString()}</span></div>`;
+            activityList.appendChild(item);
+        });
+    };
+    
+    const fetchEmergencyAlerts = async () => {
+        try {
+            const res = await fetchWithAuth(`${API_URL}/admin/dashboard/stats`);
+            if (!res.ok) throw new Error('Failed to fetch alerts');
+            const { data } = await res.json();
+            emergencyList.innerHTML = '';
+            if (!data.recentAlerts || data.recentAlerts.length === 0) {
+                 emergencyList.innerHTML = '<div>No active emergencies.</div>';
+                 return;
+            }
+            data.recentAlerts.forEach(alert => {
+                 const touristName = alert.touristId ? `${alert.touristId.personalInfo.firstName} ${alert.touristId.personalInfo.lastName}` : 'Unknown';
+                 const item = document.createElement('div');
+                 item.className = `alert-item ${alert.severity ? alert.severity.toLowerCase() : 'medium'}`;
+                 item.innerHTML = `
+                    <div class="alert-header">
+                        <h5>${alert.type} - ${touristName}</h5>
+                        <span class="alert-severity ${alert.severity ? alert.severity.toLowerCase() : 'medium'}">${alert.severity || 'Medium'}</span>
+                    </div>
+                    <p>${alert.description || 'No description provided.'}</p>
+                    <small>${new Date(alert.createdAt).toLocaleString()}</small>
+                 `;
+                 emergencyList.appendChild(item);
+            });
+        } catch(error) {
+            console.error(error);
+        }
+    };
+    
+    const initAnalyticsCharts = () => {
+        if (charts.emergencyChart) charts.emergencyChart.destroy();
+        if (charts.riskChart) charts.riskChart.destroy();
+
+        charts.emergencyChart = new Chart(document.getElementById('emergencyChart'), {
+            type: 'line',
+            data: { labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'], datasets: [{ label: 'Emergency Incidents', data: [12, 19, 3, 5, 2, 3], borderColor: 'rgb(255, 99, 132)' }] }
+        });
+
+        charts.riskChart = new Chart(document.getElementById('riskChart'), {
+            type: 'doughnut',
+            data: { labels: ['Low Risk', 'Medium Risk', 'High Risk'], datasets: [{ label: 'Tourist Risk Distribution', data: [300, 50, 100], backgroundColor: ['rgb(75, 192, 192)', 'rgb(255, 205, 86)', 'rgb(255, 99, 132)'] }] }
+        });
+    };
+
+    const fetchTourists = async () => {
+        try {
+            const res = await fetchWithAuth(`${API_URL}/admin/tourists`);
+            const { data } = await res.json();
+            touristMarkers.forEach(marker => marker.remove());
+            touristMarkers = [];
+            touristsTableBody.innerHTML = '';
+            data.forEach(tourist => {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td>${tourist.personalInfo.firstName} ${tourist.personalInfo.lastName}</td>
+                    <td><span class="status-badge ${tourist.status}">${tourist.status}</span></td>
+                    <td>${tourist.safetyScore || 'N/A'}</td><td>${new Date(tourist.lastActiveAt).toLocaleString()}</td>
+                    <td><span class="risk-badge ${tourist.riskLevel}">${tourist.riskLevel}</span></td>`;
+                touristsTableBody.appendChild(row);
+                if (tourist.currentLocation?.coordinates) {
+                    const { latitude, longitude } = tourist.currentLocation.coordinates;
+                    if (latitude && longitude) {
+                        const marker = L.marker([latitude, longitude]).addTo(map).bindPopup(`<b>${tourist.personalInfo.firstName}</b><br>Status: ${tourist.status}`);
+                        touristMarkers.push(marker);
+                    }
+                }
+            });
+        } catch (error) { console.error(error); }
+    };
+    
+    const fetchGeofences = async () => {
+        try {
+            const res = await fetchWithAuth(`${API_URL}/geofences`);
+            if (!res.ok) throw new Error('Failed to get geofences');
+            const { data } = await res.json();
+            allGeofences = data;
+            renderGeofencesOnMap(data);
+            renderGeofencesInTable(data);
+        } catch (error) { console.error('Error fetching geofences:', error.message); }
+    };
+
+    const renderGeofencesOnMap = (geofences) => {
+        geofenceLayers.forEach(layer => layer.remove());
+        geofenceLayers = [];
+        geofences.forEach(fence => {
+            const colorMap = { safe: 'green', caution: 'yellow', danger: 'red' };
+            const [longitude, latitude] = fence.location.coordinates;
+            const circle = L.circle([latitude, longitude], { radius: fence.radius, color: colorMap[fence.dangerLevel] || 'blue', fillOpacity: 0.2 }).addTo(map).bindPopup(`<b>${fence.name}</b>`);
+            geofenceLayers.push(circle);
+        });
+    };
+
+    const renderGeofencesInTable = (geofences) => {
+        geofenceTableBody.innerHTML = '';
+        if (geofences.length === 0) {
+            geofenceTableBody.innerHTML = `<tr><td colspan="3">No geofence zones created yet.</td></tr>`;
+            return;
+        }
+        geofences.forEach(fence => {
+            const row = document.createElement('tr');
+            row.innerHTML = `<td>${fence.name}</td>
+                <td><span class="risk-badge ${fence.dangerLevel}">${fence.dangerLevel}</span></td>
+                <td>
+                    <button class="btn btn--sm edit-geofence-btn" data-id="${fence._id}"><i class="fas fa-edit"></i> Edit</button>
+                    <button class="btn btn--sm btn--danger delete-geofence-btn" data-id="${fence._id}"><i class="fas fa-trash"></i> Delete</button>
+                </td>`;
+            geofenceTableBody.appendChild(row);
+        });
+    };
+
+    const showDashboard = () => {
+        loginPage.classList.add('hidden');
+        dashboardPage.classList.remove('hidden');
+        showPage('dashboard');
+        initMap();
+        fetchAllDataForDashboard();
+    };
+
+    const showLogin = () => {
+        loginPage.classList.remove('hidden');
+        dashboardPage.classList.add('hidden');
+    };
+
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        try {
+            const res = await fetch(`${API_URL}/admin/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            if (res.ok) {
+                const { data } = await res.json();
+                token = data.token;
+                localStorage.setItem('adminToken', token);
+                showDashboard();
+            } else { alert('Invalid credentials'); }
+        } catch (error) { console.error('Login error:', error); }
     });
-  }
 
-  checkAuthStatus() {
-    const isAuthenticated = sessionStorage.getItem('isAuthenticated');
-    if (isAuthenticated === 'true') {
-      this.showDashboard();
-    } else {
-      this.showLogin();
-    }
-  }
+    geofenceForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const geofenceData = {
+            name: document.getElementById('geofenceName').value,
+            latitude: parseFloat(document.getElementById('latitude').value),
+            longitude: parseFloat(document.getElementById('longitude').value),
+            radius: parseInt(document.getElementById('radius').value, 10),
+            dangerLevel: document.getElementById('dangerLevel').value,
+        };
+        try {
+            const res = await fetchWithAuth(`${API_URL}/geofences`, { method: 'POST', body: JSON.stringify(geofenceData) });
+            if (res.ok) {
+                alert('Geofence zone created successfully!');
+                geofenceForm.reset();
+                fetchGeofences();
+            } else { throw new Error('Failed to create geofence zone.'); }
+        } catch (error) { alert(error.message); }
+    });
 
-  handleLogin() {
-    console.log('handleLogin called');
-    const usernameField = document.getElementById('username');
-    const passwordField = document.getElementById('password');
-    if (!usernameField || !passwordField) {
-      console.error('Username or password field not found');
-      this.showNotification('Login form error. Please refresh the page.', 'error');
-      return;
-    }
-    const username = usernameField.value.trim();
-    const password = passwordField.value.trim();
-    console.log('Login attempt:', { username, passwordLength: password.length });
+    geofenceTableBody.addEventListener('click', async (e) => {
+        const target = e.target.closest('button');
+        if (!target) return;
+        const id = target.dataset.id;
+        
+        if (target.classList.contains('delete-geofence-btn')) {
+            if (confirm('Are you sure you want to delete this zone?')) {
+                try {
+                    const res = await fetchWithAuth(`${API_URL}/geofences/${id}`, { method: 'DELETE' });
+                    if (res.ok) {
+                        alert('Geofence deleted!');
+                        fetchGeofences();
+                    } else { throw new Error('Failed to delete geofence.'); }
+                } catch (error) { alert(error.message); }
+            }
+        }
 
-    if (username.length > 0 && password.length > 0) {
-      console.log('Credentials valid, proceeding with authentication...');
-      const submitBtn = document.querySelector('#loginForm button[type="submit"]');
-      if (submitBtn) {
-        const originalText = submitBtn.innerHTML;
-        submitBtn.innerHTML = ' Authenticating...';
-        submitBtn.disabled = true;
-        setTimeout(() => {
-          console.log('Authentication successful');
-          this.currentUser = { username, role: 'admin' };
-          sessionStorage.setItem('isAuthenticated', 'true');
-          sessionStorage.setItem('username', username);
-          submitBtn.innerHTML = originalText;
-          submitBtn.disabled = false;
-          this.showDashboard();
-          this.showNotification('Login successful! Welcome to the dashboard.', 'success');
-        }, 1500);
-      }
-    } else {
-      this.showNotification('Please enter both username and password', 'error');
-      if (username.length === 0) {
-        usernameField.style.borderColor = '#ef4444';
-        setTimeout(() => {
-          usernameField.style.borderColor = '';
-        }, 3000);
-      }
-      if (password.length === 0) {
-        passwordField.style.borderColor = '#ef4444';
-        setTimeout(() => {
-          passwordField.style.borderColor = '';
-        }, 3000);
-      }
-    }
-  }
+        if (target.classList.contains('edit-geofence-btn')) {
+            const fence = allGeofences.find(f => f._id === id);
+            if (fence) {
+                document.getElementById('editGeofenceId').value = fence._id;
+                document.getElementById('editGeofenceName').value = fence.name;
+                document.getElementById('editLatitude').value = fence.location.coordinates[1];
+                document.getElementById('editLongitude').value = fence.location.coordinates[0];
+                document.getElementById('editRadius').value = fence.radius;
+                document.getElementById('editDangerLevel').value = fence.dangerLevel;
+                editGeofenceModal.classList.remove('hidden');
+            }
+        }
+    });
 
-  handleLogout() {
-    console.log('Logging out...');
-    sessionStorage.removeItem('isAuthenticated');
-    sessionStorage.removeItem('username');
-    this.currentUser = null;
-    const usernameField = document.getElementById('username');
-    const passwordField = document.getElementById('password');
-    if (usernameField) usernameField.value = '';
-    if (passwordField) passwordField.value = '';
-    this.showLogin();
-    this.showNotification('Logged out successfully', 'info');
-  }
+    editGeofenceForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('editGeofenceId').value;
+        const updatedData = {
+            name: document.getElementById('editGeofenceName').value,
+            latitude: parseFloat(document.getElementById('editLatitude').value),
+            longitude: parseFloat(document.getElementById('editLongitude').value),
+            radius: parseInt(document.getElementById('editRadius').value, 10),
+            dangerLevel: document.getElementById('dangerLevel').value,
+        };
+        try {
+            const res = await fetchWithAuth(`${API_URL}/geofences/${id}`, { method: 'PUT', body: JSON.stringify(updatedData) });
+            if (res.ok) {
+                alert('Geofence updated!');
+                editGeofenceModal.classList.add('hidden');
+                fetchGeofences();
+            } else { throw new Error('Failed to update geofence.'); }
+        } catch (error) { alert(error.message); }
+    });
+    
+    closeEditModal.addEventListener('click', () => {
+        editGeofenceModal.classList.add('hidden');
+    });
 
-  showLogin() {
-    console.log('Showing login page...');
-    const loginPage = document.getElementById('loginPage');
-    const dashboardPage = document.getElementById('dashboardPage');
-    if (loginPage) loginPage.classList.remove('hidden');
-    if (dashboardPage) dashboardPage.classList.add('hidden');
-    setTimeout(() => this.setupLoginEvents(), 100);
-  }
+    logoutBtn.addEventListener('click', handleLogout);
+    sidebarMenuItems.forEach(item => {
+        item.addEventListener('click', () => showPage(item.dataset.page));
+    });
 
-  showDashboard() {
-    console.log('Showing dashboard...');
-    const loginPage = document.getElementById('loginPage');
-    const dashboardPage = document.getElementById('dashboardPage');
-    if (loginPage) loginPage.classList.add('hidden');
-    if (dashboardPage) dashboardPage.classList.remove('hidden');
-    const username = sessionStorage.getItem('username') || 'Admin User';
-    const userNameElement = document.querySelector('.user-name');
-    if (userNameElement) userNameElement.textContent = username;
-    setTimeout(() => {
-      this.setupDashboardEventListeners();
-      this.initializeDashboardComponents();
-    }, 100);
-  }
-
-  initializeDashboardComponents() {
-    console.log('Initializing dashboard components...');
-    setTimeout(() => {
-      try {
-        this.updateDashboardStats();
-        this.loadTouristsTable();
-        this.loadEmergencyAlerts();
-        this.initializeMap();
-        this.initializeCharts();
-        this.startRealTimeUpdates();
-        console.log('Dashboard components initialized successfully');
-      } catch (error) {
-        console.error('Error initializing dashboard components:', error);
-        this.showNotification('Some dashboard components may not be working properly', 'warning');
-      }
-    }, 200);
-  }
-
-  navigateToPage(page) {
-    console.log('Navigating to page:', page);
-    document.querySelectorAll('.menu-item').forEach((item) => item.classList.remove('active'));
-    const activeMenuItem = document.querySelector(`[data-page="${page}"]`);
-    if (activeMenuItem) activeMenuItem.classList.add('active');
-    document.querySelectorAll('.page-content').forEach((content) => content.classList.add('hidden'));
-    const pageMap = {
-      dashboard: 'dashboardHome',
-      map: 'dashboardHome',
-      analytics: 'analyticsPage',
-      emergency: 'emergencyPage',
-      tourists: 'touristsPage',
-      settings: 'dashboardHome',
+    const checkAuthStatus = async () => {
+        token = localStorage.getItem('adminToken');
+        if (!token) return showLogin();
+        showDashboard(); 
     };
-    const targetPage = pageMap[page] || 'dashboardHome';
-    const pageElement = document.getElementById(targetPage);
-    if (pageElement) pageElement.classList.remove('hidden');
-    const titles = {
-      dashboard: 'Dashboard Overview',
-      map: 'Map View',
-      analytics: 'Analytics & Insights',
-      emergency: 'Emergency Alerts',
-      tourists: 'Tourist Management',
-      settings: 'Settings',
-    };
-    const pageTitleElement = document.querySelector('.page-title');
-    if (pageTitleElement) pageTitleElement.textContent = titles[page] || 'Dashboard';
-    this.currentPage = page;
-    setTimeout(() => {
-      if (page === 'analytics') this.initializeCharts();
-      else if (page === 'emergency') this.loadEmergencyAlerts();
-      else if (page === 'tourists') this.loadTouristsTable();
-    }, 100);
-  }
 
-  initializeMap() {
-    console.log('Initializing map...');
-    if (typeof L === 'undefined') {
-      console.error('Leaflet library not loaded');
-      this.showNotification('Map library not loaded. Please refresh the page.', 'error');
-      return;
-    }
-    if (this.map) {
-      this.map.remove();
-      this.map = null;
-    }
-    const mapContainer = document.getElementById('map');
-    if (!mapContainer) {
-      console.log('Map container not found');
-      return;
-    }
-    try {
-      mapContainer.innerHTML = '';
-      this.map = L.map('map').setView([26.1445, 91.7362], 12);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
-      }).addTo(this.map);
+    checkAuthStatus();
+});
 
-      this.data.geofences.forEach((geofence) => {
-        const color =
-          geofence.color === 'green' ? '#10b981' : geofence.color === 'yellow' ? '#f59e0b' : '#ef4444';
-        const circle = L.circle([geofence.center.lat, geofence.center.lng], {
-          color,
-          fillColor: color,
-          fillOpacity: 0.2,
-          radius: geofence.radius,
-          weight: 2,
-        }).addTo(this.map);
-        circle.bindPopup(
-          `<div><strong>${geofence.name}</strong><br>Danger Level: ${geofence.dangerLevel}<br>Radius: ${geofence.radius}m</div>`
-        );
-      });
-
-      this.data.tourists.forEach((tourist) => {
-        const markerColor = tourist.status === 'emergency' ? '#ef4444' : '#10b981';
-        const marker = L.circleMarker([tourist.location.lat, tourist.location.lng], {
-          color: markerColor,
-          fillColor: markerColor,
-          fillOpacity: 0.8,
-          radius: 8,
-          weight: 2,
-        }).addTo(this.map);
-        marker.bindPopup(
-          `<div><strong>${tourist.name}</strong><br>Status: ${tourist.status}<br>Safety Score: ${tourist.safetyScore}%<br>Last Seen: ${tourist.lastSeen}<br>Phone: ${tourist.phone}</div>`
-        );
-      });
-
-      this.data.emergencyAlerts.forEach((alert) => {
-        const alertMarker = L.marker([alert.location.lat, alert.location.lng], {
-          icon: L.divIcon({
-            className: 'emergency-marker',
-            html: '🚨',
-            iconSize: [30, 30],
-          }),
-        }).addTo(this.map);
-        alertMarker.bindPopup(
-          `<div><strong>Emergency Alert</strong><br>${alert.type}: ${alert.message}<br>Location: ${alert.location.lat.toFixed(
-            4
-          )}, ${alert.location.lng.toFixed(4)}<br>Time: ${new Date(alert.timestamp).toLocaleString()}<br>Status: ${
-            alert.status
-          }</div>`
-        );
-      });
-    } catch (error) {
-      console.error('Map initialization failed:', error);
-      this.showNotification('Failed to initialize map', 'error');
-    }
-  }
-
-  showNotification(message, type = 'info') {
-    const container = document.createElement('div');
-    container.className = `notification ${type}`;
-    container.style.position = 'fixed';
-    container.style.top = '20px';
-    container.style.right = '20px';
-    container.style.padding = '12px 20px';
-    container.style.backgroundColor = '#fff';
-    container.style.border = '1px solid #ccc';
-    container.style.borderLeft = `5px solid ${type === 'error' ? 'red' : type === 'success' ? 'green' : '#999'}`;
-    container.style.borderRadius = '3px';
-    container.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
-    container.style.zIndex = 10000;
-    container.style.color = '#333';
-    container.textContent = message;
-    document.body.appendChild(container);
-    setTimeout(() => {
-      container.style.opacity = 0;
-      setTimeout(() => {
-        container.remove();
-      }, 300);
-    }, 4000);
-  }
-
-  /* Placeholder stubs for unimplemented functions (should be implemented) */
-  updateDashboardStats() {
-    console.log('updateDashboardStats() to implement');
-  }
-  loadTouristsTable() {
-    console.log('loadTouristsTable() to implement');
-  }
-  loadEmergencyAlerts() {
-    console.log('loadEmergencyAlerts() to implement');
-  }
-  initializeCharts() {
-    console.log('initializeCharts() to implement');
-  }
-  startRealTimeUpdates() {
-    console.log('startRealTimeUpdates() to implement');
-  }
-  refreshMapData() {
-    console.log('refreshMapData() to implement');
-  }
-  updateAnalytics(period) {
-    console.log('updateAnalytics() to implement');
-  }
-  filterEmergencyAlerts(status) {
-    console.log('filterEmergencyAlerts() to implement');
-  }
-  sendMessage() {
-    console.log('sendMessage() to implement');
-  }
-  searchTourists(query) {
-    console.log('searchTourists() to implement');
-  }
-  changeLanguage(lang) {
-    console.log('changeLanguage() to implement');
-  }
-}
-
-// Initialize dashboard instance
-window.dashboard = new TouristSafetyDashboard();
