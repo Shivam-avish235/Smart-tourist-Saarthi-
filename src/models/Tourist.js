@@ -1,12 +1,17 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
-// Helper function to generate a unique digitalId
 const generateDigitalId = () => {
   const timestamp = Date.now().toString(36);
   const randomStr = Math.random().toString(36).substring(2, 10);
   return `DI-${timestamp}-${randomStr}`.toUpperCase();
 };
+
+const emergencyContactSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  relationship: { type: String, default: 'Unknown' },
+  phoneNumber: { type: String, required: true },
+}, {_id: false});
 
 const touristSchema = new mongoose.Schema({
   digitalId: {
@@ -29,73 +34,37 @@ const touristSchema = new mongoose.Schema({
     select: false
   },
   personalInfo: {
-    firstName: {
-      type: String,
-      required: [true, 'First name is required'],
-      trim: true
-    },
-    lastName: {
-      type: String,
-      required: [true, 'Last name is required'],
-      trim: true
-    },
-    dateOfBirth: {
-      type: Date,
-      required: [true, 'Date of birth is required']
-    },
-    nationality: {
-      type: String,
-      required: [true, 'Nationality is required']
-    },
-    phoneNumber: {
-      type: String,
-      required: [true, 'Phone number is required']
-    }
+    firstName: { type: String, required: true, trim: true },
+    lastName: { type: String, required: true, trim: true },
+    dateOfBirth: { type: Date, required: true },
+    nationality: { type: String, required: true },
+    phoneNumber: { type: String, required: true }
   },
   kycDetails: {
-    documentType: {
-      type: String,
-      required: [true, 'Document type is required'],
-      enum: ['aadhaar', 'passport', 'driving_license']
-    },
-    documentNumber: {
-      type: String,
-      required: [true, 'Document number is required']
-    },
-    verified: {
-      type: Boolean,
-      default: false
-    }
+    documentType: { type: String, required: true, enum: ['aadhaar', 'passport', 'driving_license'] },
+    documentNumber: { type: String, required: true },
+    verified: { type: Boolean, default: false }
   },
-  tripDetails: {
-    checkInDate: {
-      type: Date,
-      default: Date.now
-    },
-    checkOutDate: {
-      type: Date,
-      default: () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-    }
+  emergencyContacts: [emergencyContactSchema],
+  healthInfo: {
+    hasHealthCondition: { type: Boolean, default: false },
+    description: { type: String, default: '' }
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
+  currentLocation: {
+      coordinates: {
+          latitude: Number,
+          longitude: Number,
+      },
+      accuracy: Number,
+      timestamp: Date,
+      address: String,
   },
-  updatedAt: {
-    type: Date,
-    default: Date.now
-  }
-});
+  status: { type: String, enum: ['active', 'inactive', 'emergency'], default: 'active' },
+  lastActiveAt: { type: Date, default: Date.now },
+  safetyScore: { type: Number, default: 100, min: 0, max: 100 },
+  riskLevel: { type: String, enum: ['low', 'medium', 'high'], default: 'low' },
+}, { timestamps: true });
 
-// Index for better query performance
-touristSchema.index({ email: 1 });
-touristSchema.index({ digitalId: 1 });
-
-// Middleware to update the updatedAt field before saving
-touristSchema.pre('save', function(next) {
-  this.updatedAt = Date.now();
-  next();
-});
 
 // Hash password before saving
 touristSchema.pre('save', async function(next) {
@@ -115,14 +84,7 @@ touristSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Transform output to remove password and __v
-touristSchema.methods.toJSON = function() {
-  const tourist = this.toObject();
-  delete tourist.password;
-  delete tourist.__v;
-  return tourist;
-};
-
 const Tourist = mongoose.model('Tourist', touristSchema);
 
 export default Tourist;
+

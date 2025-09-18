@@ -1,5 +1,6 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import { protect } from '../middleware/auth.js'; // **FIX**: Import protect middleware
 import { validateTouristRegistration } from '../middleware/validation.js';
 import Tourist from '../models/Tourist.js';
 
@@ -91,7 +92,6 @@ router.post('/register', validateTouristRegistration, async (req, res) => {
   } catch (error) {
     console.error('Register error:', error);
     
-    // Handle different types of errors
     if (error.name === 'ValidationError') {
       return res.status(400).json({
         success: false,
@@ -109,24 +109,10 @@ router.post('/register', validateTouristRegistration, async (req, res) => {
       });
     }
     
-    // Generic server error
     res.status(500).json({
       success: false,
       error: 'Server error during registration',
       message: process.env.NODE_ENV === 'development' ? error.message : 'An unexpected error occurred'
-    });
-    
-    // Handle duplicate key error specifically
-    if (error.code === 11000) {
-      return res.status(400).json({
-        success: false,
-        error: 'Registration failed due to duplicate information'
-      });
-    }
-    
-    res.status(500).json({
-      success: false,
-      error: 'Server error during registration'
     });
   }
 });
@@ -136,7 +122,6 @@ router.post('/register', validateTouristRegistration, async (req, res) => {
 // @access  Public
 router.post('/login', async (req, res) => {
   try {
-    // Add validation for request body
     if (!req.body || Object.keys(req.body).length === 0) {
       return res.status(400).json({
         success: false,
@@ -146,7 +131,6 @@ router.post('/login', async (req, res) => {
 
     const { email, password } = req.body;
 
-    // Validate email and password
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -154,7 +138,6 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Check for tourist
     const tourist = await Tourist.findOne({ email }).select('+password');
     if (!tourist) {
       return res.status(401).json({
@@ -163,7 +146,6 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Check if password matches
     const isMatch = await tourist.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({
@@ -172,7 +154,6 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Generate JWT token
     const token = jwt.sign(
       { id: tourist._id },
       process.env.JWT_SECRET || 'fallback_secret',
@@ -200,6 +181,24 @@ router.post('/login', async (req, res) => {
     });
   }
 });
+
+// **FIX**: Add a protected route to get the logged-in user's profile
+// @desc    Get user profile
+// @route   GET /api/auth/profile
+// @access  Private
+router.get('/profile', protect, async (req, res) => {
+    try {
+        const tourist = await Tourist.findById(req.tourist._id);
+        if (!tourist) {
+            return res.status(404).json({ success: false, error: 'Tourist not found' });
+        }
+        res.status(200).json({ success: true, data: tourist });
+    } catch (error) {
+        console.error('Profile fetch error:', error);
+        res.status(500).json({ success: false, error: 'Server error' });
+    }
+});
+
 
 // Export the router
 export default router;
