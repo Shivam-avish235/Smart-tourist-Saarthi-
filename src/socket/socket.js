@@ -1,30 +1,14 @@
-import { Server } from "socket.io";
+let io = {
+  emit: (...args) => {
+    console.log("Socket event skipped on Vercel:", ...args);
+  }
+};
 
-let io;
-
-export function initSocket(server) {
-  io = new Server(server, {
-    cors: {
-      origin: "*", // Replace with frontend origin in production
-      methods: ["GET", "POST"],
-    },
-  });
-
-  io.on("connection", (socket) => {
-    console.log("⚡ Client connected:", socket.id);
-
-    socket.on("disconnect", () => {
-      console.log("❌ Client disconnected:", socket.id);
-    });
-  });
-
-  console.log("✅ Socket.IO initialized");
+export function initSocket() {
+  console.log("Socket.IO disabled for Vercel deployment");
   return io;
 }
 
 export function getIO() {
-  if (!io) {
-    throw new Error("Socket.io not initialized! Call initSocket(server) first.");
-  }
   return io;
 }
