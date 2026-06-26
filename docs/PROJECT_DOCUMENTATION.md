@@ -241,7 +241,15 @@ PORT=5000
 MONGO_URI=mongodb://localhost:27017/tourist-safety
 JWT_SECRET=your-secret-key
 NODE_ENV=production
+JWT_EXPIRE=7d
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=your_secure_password
+ETHEREUM_RPC_URL=https://your-ethereum-rpc-endpoint
+KYC_CONTRACT_ADDRESS=0xYourContractAddress
+ADMIN_PRIVATE_KEY=your_private_key
 ```
+
+The blockchain variables are optional for core API operation, but if configured, `ETHEREUM_RPC_URL` must be a real `http(s)://` or `ws(s)://` endpoint. A placeholder string will cause Web3 provider autodetection to fail.
 
 ### Installation Steps
 1. Clone repository

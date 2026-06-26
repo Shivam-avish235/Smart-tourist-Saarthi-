@@ -234,12 +234,20 @@ MONGO_URI=mongodb://127.0.0.1:27017/smart_tourist
 
 # Authentication
 JWT_SECRET=your_super_secret_jwt_key
+JWT_EXPIRE=7d
 
 # Admin
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=your_secure_password
 FRONTEND_URL=http://localhost:3000
+
+# Optional blockchain KYC integration
+ETHEREUM_RPC_URL=https://your-ethereum-rpc-endpoint
+KYC_CONTRACT_ADDRESS=0xYourContractAddress
+ADMIN_PRIVATE_KEY=your_private_key
 ```
+
+`ETHEREUM_RPC_URL` must be a valid `http(s)://` or `ws(s)://` URL. A literal `placeholder` value will fail during provider initialization.
 
 > ⚠️ **Never commit your `.env` file to version control.**
 

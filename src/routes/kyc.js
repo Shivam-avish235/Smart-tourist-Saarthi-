@@ -1,10 +1,11 @@
 import express from 'express';
+import { protect } from '../middleware/auth.js';
 import KYCVerification from '../models/KYCVerification.js';
 import BlockchainService from '../services/blockchainService.js';
-import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
 const blockchainService = new BlockchainService();
+const isBlockchainDisabled = true;
 
 // Initiate KYC verification
 router.post('/kyc/initiate', protect, async (req, res) => {
@@ -24,14 +25,16 @@ router.post('/kyc/initiate', protect, async (req, res) => {
         
         const digitalIdentityHash = kycVerification.generateDigitalIdentityHash();
         
-        try {
-            const blockchainRecord = await blockchainService.createDigitalIdentity(
-                touristId.toString(),
-                digitalIdentityHash
-            );
-            kycVerification.blockchainRecord = blockchainRecord;
-        } catch (blockchainError) {
-            console.error('Blockchain integration failed:', blockchainError);
+        if (!isBlockchainDisabled) {
+            try {
+                const blockchainRecord = await blockchainService.createDigitalIdentity(
+                    touristId.toString(),
+                    digitalIdentityHash
+                );
+                kycVerification.blockchainRecord = blockchainRecord;
+            } catch (blockchainError) {
+                console.error('Blockchain integration failed:', blockchainError);
+            }
         }
         
         kycVerification.addAuditLog(
@@ -49,7 +52,7 @@ router.post('/kyc/initiate', protect, async (req, res) => {
             data: {
                 verificationId: kycVerification._id,
                 digitalIdentityHash,
-                blockchainTxHash: kycVerification.blockchainRecord?.transactionHash
+                blockchainTxHash: kycVerification.blockchainRecord?.transactionHash || null
             }
         });
         
@@ -102,3 +105,4 @@ router.get('/kyc/status', protect, async (req, res) => {
 });
 
 export { router as kycRoutes };
+
