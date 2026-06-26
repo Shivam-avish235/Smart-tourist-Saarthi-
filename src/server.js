@@ -47,7 +47,7 @@ app.use(
 app.use(morgan('dev'));
 
 // Serve frontend static files
-app.use(express.static(path.join(__dirname, '..', 'public')));
+// app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Mount API routes
 app.use('/api/auth', authRoutes);
@@ -65,9 +65,9 @@ app.get('/health', (req, res) => {
 });
 
 // Serve index.html on root route for SPA fallback
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
-});
+// app.get('/', (req, res) => {
+//   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+// });
 
 // 404 handler
 app.use((req, res) => {
