@@ -5,21 +5,21 @@ import { getIO } from "../socket/socket.js";
 
 const router = express.Router();
 
-// @desc    Trigger emergency panic button
-// @route   POST /api/emergency/panic
-// @access  Private
+/**
+ * @desc    Trigger emergency panic button
+ * @route   POST /api/emergency/panic
+ * @access  Private
+ */
 router.post("/panic", protect, async (req, res) => {
   try {
-    // **FIX**: Using findByIdAndUpdate for a more atomic and reliable operation.
-    // This updates the status and decrements the safetyScore in one command.
     const updatedTourist = await Tourist.findByIdAndUpdate(
       req.tourist._id,
       {
-        status: 'emergency',
+        status: "emergency",
         lastActiveAt: new Date(),
-        $inc: { safetyScore: -30 } // Safely decrement the score
+        $inc: { safetyScore: -30 },
       },
-      { new: true } // Return the updated document
+      { new: true }
     );
 
     if (!updatedTourist) {
@@ -29,64 +29,64 @@ router.post("/panic", protect, async (req, res) => {
     }
 
     const io = getIO();
-    io.emit('emergency-notification', {
+    io.emit("emergency-notification", {
       touristId: updatedTourist._id,
       name: `${updatedTourist.personalInfo.firstName} ${updatedTourist.personalInfo.lastName}`,
       location: updatedTourist.currentLocation,
       phone: updatedTourist.personalInfo.phoneNumber,
       emergencyContacts: updatedTourist.emergencyContacts,
-      reason: req.body.reason || 'Panic button pressed',
-      timestamp: new Date()
+      reason: req.body.reason || "Panic button pressed",
+      timestamp: new Date(),
     });
 
-    console.log(`🚨 EMERGENCY ALERT: Tourist ${updatedTourist.personalInfo.firstName} activated panic button!`);
+    console.log(
+      `🚨 EMERGENCY ALERT: Tourist ${updatedTourist.personalInfo.firstName} activated panic button!`
+    );
 
     res.status(200).json({
       success: true,
-      message: 'Emergency alert activated! Help is on the way.',
+      message: "Emergency alert activated! Help is on the way.",
       data: {
         location: updatedTourist.currentLocation,
         tourist: {
           id: updatedTourist._id,
           name: `${updatedTourist.personalInfo.firstName} ${updatedTourist.personalInfo.lastName}`,
-          phone: updatedTourist.personalInfo.phoneNumber
+          phone: updatedTourist.personalInfo.phoneNumber,
         },
         emergencyContacts: updatedTourist.emergencyContacts,
-        reason: req.body.reason || 'Panic button pressed',
-      }
+        reason: req.body.reason || "Panic button pressed",
+      },
     });
-
   } catch (error) {
-    console.error('Emergency panic error:', error);
+    console.error("Emergency panic error:", error);
     res.status(500).json({
       success: false,
-      error: 'Failed to activate emergency alert'
+      error: "Failed to activate emergency alert",
     });
   }
 });
 
-
-// @desc    Resolve emergency status
-// @route   POST /api/emergency/resolve
-// @access  Private
+/**
+ * @desc    Resolve emergency status
+ * @route   POST /api/emergency/resolve
+ * @access  Private
+ */
 router.post("/resolve", protect, async (req, res) => {
   try {
-    // **FIX**: Using findByIdAndUpdate here as well for consistency and stability.
     const updatedTourist = await Tourist.findByIdAndUpdate(
       req.tourist._id,
       {
         status: "active",
         lastActiveAt: new Date(),
-        $inc: { safetyScore: 20 }
+        $inc: { safetyScore: 20 },
       },
       { new: true }
     );
 
     if (!updatedTourist) {
-      return res.status(404).json({
-        success: false,
-        error: "Tourist not found",
-      });
+      return res
+        .status(404)
+        .json({ success: false, error: "Tourist not found" });
     }
 
     const io = getIO();
@@ -113,18 +113,19 @@ router.post("/resolve", protect, async (req, res) => {
   }
 });
 
-// @desc    Get emergency status
-// @route   GET /api/emergency/status
-// @access  Private
+/**
+ * @desc    Get emergency status
+ * @route   GET /api/emergency/status
+ * @access  Private
+ */
 router.get("/status", protect, async (req, res) => {
   try {
     const tourist = await Tourist.findById(req.tourist._id);
 
     if (!tourist) {
-      return res.status(404).json({
-        success: false,
-        error: "Tourist not found",
-      });
+      return res
+        .status(404)
+        .json({ success: false, error: "Tourist not found" });
     }
 
     res.status(200).json({
@@ -146,4 +147,3 @@ router.get("/status", protect, async (req, res) => {
 });
 
 export { router as emergencyRoutes };
-

@@ -1616,7 +1616,7 @@ select.form-control {
 }
 
 .leaflet-popup-content {
-    color: var(--color-text);
+    color: rgb(78, 36, 98);
     font-family: var(--font-family-base);
 }
 

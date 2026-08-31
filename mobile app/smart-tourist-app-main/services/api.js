@@ -1,10 +1,11 @@
-import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 
-const API_BASE = 'http://10.249.174.245:5000/api';
+const API_BASE = "http://192.168.1.7:5000/api";
+
 
 /**
- * Helper to communicate with backend
+ * Helper to communicate with backend 
  */
 export const apiRequest = async (endpoint, method = 'GET', body = null) => {
   try {
